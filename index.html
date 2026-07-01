@@ -121,7 +121,6 @@
         }
         .countdown-label.show { opacity: 1; }
 
-        /* Retina HUD */
         .eye-guide {
             position: absolute;
             inset: 0;
@@ -396,13 +395,11 @@
     <div class="video-wrap" id="videoWrap">
         <video id="video" autoplay playsinline muted></video>
 
-        <!-- Dual retina HUD — viewBox 0 0 100 60, eyes at (32,30) and (68,30) -->
         <svg class="eye-guide" id="eyeGuide" viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet">
 
             <!-- LEFT EYE HUD centered at (32,30) -->
             <g transform="translate(32,30)">
                 <circle class="hud-ring-outer" cx="0" cy="0" r="18"/>
-
                 <g class="hud-spin-slow-c">
                     <path class="hud-arc" d="M0,-18 A18,18 0 0,1 18,0"/>
                     <path class="hud-arc" d="M18,0 A18,18 0 0,1 0,18"/>
@@ -413,7 +410,6 @@
                     <polygon class="hud-tri" points="0,20 1.4,17 -1.4,17"/>
                     <polygon class="hud-tri" points="-20,0 -17,1.4 -17,-1.4"/>
                 </g>
-
                 <g class="hud-spin-slow-c" style="animation-duration:18s">
                     <line class="hud-tick-lg" x1="0" y1="-18" x2="0" y2="-15.5"/>
                     <line class="hud-tick" x1="9" y1="-15.59" x2="7.75" y2="-13.42"/>
@@ -428,36 +424,29 @@
                     <line class="hud-tick" x1="-15.59" y1="-9" x2="-13.42" y2="-7.75"/>
                     <line class="hud-tick" x1="-9" y1="-15.59" x2="-7.75" y2="-13.42"/>
                 </g>
-
                 <circle class="hud-ring-main" cx="0" cy="0" r="12"/>
-
                 <g class="hud-spin-rev-c">
                     <circle cx="0" cy="0" r="9.5" fill="none"
                         stroke="rgba(88,166,255,0.45)" stroke-width="0.45" stroke-dasharray="3 2"/>
                 </g>
-
                 <circle class="hud-ring-pupil" cx="0" cy="0" r="5.5"/>
                 <circle class="hud-dot" cx="0" cy="0" r="0.7"/>
-
                 <line class="hud-crosshair" x1="0" y1="-12" x2="0" y2="-7"/>
                 <line class="hud-crosshair" x1="0" y1="7" x2="0" y2="12"/>
                 <line class="hud-crosshair" x1="-12" y1="0" x2="-7" y2="0"/>
                 <line class="hud-crosshair" x1="7" y1="0" x2="12" y2="0"/>
-
                 <g class="hud-spin-med-c">
                     <path class="hud-arc" d="M0,-11 A11,11 0 0,1 11,0" stroke-width="1.4"/>
                     <path class="hud-arc-thin" d="M11,0 A11,11 0 0,1 0,11"/>
                     <path class="hud-arc" d="M0,11 A11,11 0 0,1 -11,0" stroke-width="1.4"/>
                     <path class="hud-arc-thin" d="M-11,0 A11,11 0 0,1 0,-11"/>
                 </g>
-
                 <text class="hud-label" x="0" y="22.5">L-IRIS</text>
             </g>
 
             <!-- RIGHT EYE HUD centered at (68,30) -->
             <g transform="translate(68,30)">
                 <circle class="hud-ring-outer" cx="0" cy="0" r="18"/>
-
                 <g class="hud-spin-slow-c">
                     <path class="hud-arc" d="M0,-18 A18,18 0 0,1 18,0"/>
                     <path class="hud-arc" d="M18,0 A18,18 0 0,1 0,18"/>
@@ -468,7 +457,6 @@
                     <polygon class="hud-tri" points="0,20 1.4,17 -1.4,17"/>
                     <polygon class="hud-tri" points="-20,0 -17,1.4 -17,-1.4"/>
                 </g>
-
                 <g class="hud-spin-slow-c" style="animation-duration:18s">
                     <line class="hud-tick-lg" x1="0" y1="-18" x2="0" y2="-15.5"/>
                     <line class="hud-tick" x1="9" y1="-15.59" x2="7.75" y2="-13.42"/>
@@ -483,39 +471,31 @@
                     <line class="hud-tick" x1="-15.59" y1="-9" x2="-13.42" y2="-7.75"/>
                     <line class="hud-tick" x1="-9" y1="-15.59" x2="-7.75" y2="-13.42"/>
                 </g>
-
                 <circle class="hud-ring-main" cx="0" cy="0" r="12"/>
-
                 <g class="hud-spin-rev-c">
                     <circle cx="0" cy="0" r="9.5" fill="none"
                         stroke="rgba(88,166,255,0.45)" stroke-width="0.45" stroke-dasharray="3 2"/>
                 </g>
-
                 <circle class="hud-ring-pupil" cx="0" cy="0" r="5.5"/>
                 <circle class="hud-dot" cx="0" cy="0" r="0.7"/>
-
                 <line class="hud-crosshair" x1="0" y1="-12" x2="0" y2="-7"/>
                 <line class="hud-crosshair" x1="0" y1="7" x2="0" y2="12"/>
                 <line class="hud-crosshair" x1="-12" y1="0" x2="-7" y2="0"/>
                 <line class="hud-crosshair" x1="7" y1="0" x2="12" y2="0"/>
-
                 <g class="hud-spin-med-c">
                     <path class="hud-arc" d="M0,-11 A11,11 0 0,1 11,0" stroke-width="1.4"/>
                     <path class="hud-arc-thin" d="M11,0 A11,11 0 0,1 0,11"/>
                     <path class="hud-arc" d="M0,11 A11,11 0 0,1 -11,0" stroke-width="1.4"/>
                     <path class="hud-arc-thin" d="M-11,0 A11,11 0 0,1 0,-11"/>
                 </g>
-
                 <text class="hud-label" x="0" y="22.5">R-IRIS</text>
             </g>
 
-            <!-- Center divider + labels -->
             <line class="hud-divider" x1="50" y1="10" x2="50" y2="52"/>
             <text class="hud-center-text" x="50" y="4.5" text-anchor="middle">DUAL IRIS SCAN</text>
             <text class="hud-status-svg" id="hudStatusText" x="50" y="58" text-anchor="middle">SEARCHING...</text>
         </svg>
 
-        <!-- Countdown overlay -->
         <div class="countdown-overlay">
             <span class="countdown-number" id="countdownNumber"></span>
             <span class="countdown-label" id="countdownLabel">Hold still</span>
@@ -681,19 +661,25 @@
             const faces = await faceDetector.detect(video);
             setDetectionState(faces.length > 0);
         } catch(e) {
-            setDetectionState(true);
+            // Detection threw an error — keep searching, do NOT unlock
+            setDetectionState(false);
         }
     }
 
     function startDetectionLoop() {
         if (!DETECTOR_SUPPORTED) {
+            // Browser doesn't support FaceDetector — skip check and allow scan
             setDetectionState(true);
             return;
         }
         try {
             faceDetector = new FaceDetector({ fastMode: true, maxDetectedFaces: 2 });
-            detectionTimer = setInterval(runDetection, 500);
+            // Delay first run so the camera stream has actual frames
+            setTimeout(() => {
+                if (cameraActive) detectionTimer = setInterval(runDetection, 600);
+            }, 1000);
         } catch(e) {
+            // FaceDetector constructor failed — allow scan without gating
             setDetectionState(true);
         }
     }
@@ -736,9 +722,9 @@
     }
 
     function setLoading(loading) {
-        scanBtn.disabled = loading;
         videoWrap.classList.toggle('scanning', loading);
         if (loading) {
+            scanBtn.disabled = true;
             scanBtn.innerHTML = '<span class="spinner"></span><span>Scanning...</span>';
             hudStatusText.textContent = 'ANALYZING...';
             hudStatusText.style.animation = '';
@@ -747,6 +733,9 @@
             stageLabel.classList.remove('visible');
             stageBar.style.width = '0%';
             stageLabel.textContent = '';
+            // Always restore button — never leave it stuck on "Scanning..."
+            scanBtn.disabled = false;
+            scanBtn.innerHTML = '<span>Analyze My Eyes</span>';
         }
     }
 
@@ -788,7 +777,7 @@
         setTimeout(() => { statusSpan.innerHTML = '✅ Eyes detected — tap Analyze to scan'; }, 2500);
 
         if (DETECTOR_SUPPORTED && faceDetector) {
-            detectionTimer = setInterval(runDetection, 500);
+            detectionTimer = setInterval(runDetection, 600);
         }
     }
 
