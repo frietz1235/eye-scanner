@@ -187,8 +187,8 @@
             stroke-width: 0.75;
             stroke-linecap: round;
         }
-        .hud-tri  { fill: rgba(88, 166, 255, 0.85); }
-        .hud-dot  { fill: rgba(88, 166, 255, 0.9); }
+        .hud-tri { fill: rgba(88, 166, 255, 0.85); }
+        .hud-dot { fill: rgba(88, 166, 255, 0.9); }
         .hud-crosshair {
             stroke: rgba(88, 166, 255, 0.75);
             stroke-width: 0.35;
@@ -497,7 +497,7 @@
     </div>
     <div class="stage-label" id="stageLabel"></div>
 
-    <button id="scanBtn" disabled><span>Align Your Face to Camera</span></button>
+    <button id="scanBtn" disabled><span>Align Your Face to Scan</span></button>
 
     <div id="result" class="result hidden">
         <div class="result-header">
@@ -557,6 +557,7 @@
     let cameraActive    = false;
     let faceDetected    = false;
     let detectionTimer  = null;
+    let hasScanned      = false;
 
     // Offscreen canvas for live skin-tone detection (small = fast)
     const detCanvas = document.createElement('canvas');
@@ -618,17 +619,13 @@
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-    // ── Real skin-tone pixel detection ──
-    // Checks if a pixel's RGB values match human skin (light to dark tones)
+    // Real skin-tone pixel detection
     function isSkin(r, g, b) {
-        // Rule 1: classic skin tone — red dominant, clear hue separation
         const rule1 = r > 95 && g > 40 && b > 20 &&
             (Math.max(r,g,b) - Math.min(r,g,b)) > 15 &&
             Math.abs(r - g) > 15 && r > g && r > b;
-        // Rule 2: lighter / pale skin — low saturation but reddish tint
         const rule2 = r > 200 && g > 160 && b > 100 &&
             r > g && r > b && (r - b) > 30;
-        // Rule 3: darker skin tones — still red-dominant with clear r-b gap
         const rule3 = r > 60 && g > 30 && b > 15 &&
             r > g && r > b && (r - b) > 25 && (r - g) < 60;
         return rule1 || rule2 || rule3;
@@ -636,19 +633,14 @@
 
     function scanFrameForFace() {
         if (!cameraActive || !video.videoWidth) return false;
-        // Draw scaled-down frame to small canvas (fast pixel access)
         detCtx.drawImage(video, 0, 0, 80, 60);
-        // Sample center band (x: 20-60, y: 10-50) — where face appears in selfie view
         const imgData = detCtx.getImageData(20, 10, 40, 40);
         const d = imgData.data;
         let skinCount = 0;
-        const total = (40 * 40);
-        // Sample every 3rd pixel for speed
         for (let i = 0; i < d.length; i += 4 * 3) {
             if (isSkin(d[i], d[i+1], d[i+2])) skinCount++;
         }
-        const ratio = skinCount / (total / 3);
-        return ratio > 0.12; // >12% skin pixels in center = face present
+        return (skinCount / ((40 * 40) / 3)) > 0.12;
     }
 
     function setDetectionState(found) {
@@ -659,7 +651,7 @@
             hudStatusText.style.animation = 'none';
             hudStatusText.style.fillOpacity = '1';
             scanBtn.disabled = false;
-            scanBtn.innerHTML = '<span>Scan Again</span>';
+            scanBtn.innerHTML = hasScanned ? '<span>Scan Again</span>' : '<span>Scan My Eyes</span>';
             statusSpan.innerHTML = '✅ Eyes detected — tap Scan to analyze';
         } else {
             eyeGuide.classList.remove('locked');
@@ -673,12 +665,10 @@
 
     function runDetection() {
         if (!cameraActive) return;
-        const found = scanFrameForFace();
-        setDetectionState(found);
+        setDetectionState(scanFrameForFace());
     }
 
     function startDetectionLoop() {
-        // Start after a short delay to let camera warm up
         setTimeout(() => {
             if (cameraActive) detectionTimer = setInterval(runDetection, 500);
         }, 800);
@@ -733,7 +723,7 @@
             stageLabel.classList.remove('visible');
             stageBar.style.width = '0%';
             stageLabel.textContent = '';
-            // Always restore button — never leave it stuck on "Scanning..."
+            hasScanned = true;
             scanBtn.disabled = false;
             scanBtn.innerHTML = '<span>Scan Again</span>';
         }
@@ -743,7 +733,6 @@
         if (!cameraActive || !video.videoWidth) { alert("Camera not ready yet"); return; }
         if (!faceDetected) { alert("No face detected yet. Look directly at the camera."); return; }
 
-        // Stop detection during capture
         if (detectionTimer) { clearInterval(detectionTimer); detectionTimer = null; }
 
         scanBtn.disabled = true;
@@ -775,7 +764,6 @@
         setLoading(false);
         hudStatusText.textContent = 'SCAN COMPLETE';
 
-        // Resume live detection
         setTimeout(() => {
             detectionTimer = setInterval(runDetection, 500);
         }, 500);
